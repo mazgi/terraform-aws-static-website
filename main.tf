@@ -61,12 +61,16 @@ resource "aws_route53_record" "_-website-certificate-validation" {
   ttl     = 60
 }
 
+# Note: known issue
+#
+# * aws_acm_certificate_validation.website: Certificate needs [xxxx.YOURDOMAIN xxxx.YOURDOMAIN] to be set but only [xxxx.YOURDOMAIN] was passed to validation_record_fqdns
+#
 resource "aws_acm_certificate_validation" "website" {
   certificate_arn = "${aws_acm_certificate.website.arn}"
 
   validation_record_fqdns = [
     "${aws_route53_record.website-certificate-validation.fqdn}",
-    "${aws_route53_record._-website-certificate-validation.fqdn}",
+    "${aws_route53_record._-website-certificate-validation.fqdn}"
   ]
 }
 

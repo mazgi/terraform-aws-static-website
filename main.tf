@@ -6,8 +6,8 @@ terraform {
 }
 
 provider "aws" {
-  version    = "~> 1.9.0"
-  region     = "us-east-1"             # N. Virginia
+  version = "~> 1.9.0"
+  region  = "us-east-1" # N. Virginia
 }
 
 # --------------------------------
@@ -70,7 +70,7 @@ resource "aws_acm_certificate_validation" "website" {
 
   validation_record_fqdns = [
     "${aws_route53_record.website-certificate-validation.fqdn}",
-    "${aws_route53_record._-website-certificate-validation.fqdn}"
+    "${aws_route53_record._-website-certificate-validation.fqdn}",
   ]
 }
 

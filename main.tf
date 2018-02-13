@@ -131,6 +131,11 @@ data "aws_iam_policy_document" "website-s3-policy" {
   }
 }
 
+resource "aws_s3_bucket_policy" "website-s3" {
+  bucket = "${aws_s3_bucket.website-s3.id}"
+  policy = "${data.aws_iam_policy_document.website-s3-policy.json}"
+}
+
 resource "aws_s3_bucket" "website-s3" {
   bucket = "${var.website_name}-website-s3"
   acl    = "public-read"
@@ -145,9 +150,12 @@ resource "aws_s3_bucket" "website-s3" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket_policy" "website-s3" {
-  bucket = "${aws_s3_bucket.website-s3.id}"
-  policy = "${data.aws_iam_policy_document.website-s3-policy.json}"
+resource "aws_s3_bucket" "website-log-s3" {
+  bucket = "${var.website_name}-website-log-s3"
+
+  tags {}
+
+  force_destroy = true
 }
 
 # --------------------------------
@@ -171,17 +179,21 @@ resource "aws_cloudfront_distribution" "website-distribution" {
     }
   }
 
-  # ToDo
-  #logging_config {
-  #}
+  logging_config {
+    include_cookies = false
+    bucket          = "${aws_s3_bucket.website-log-s3.bucket_domain_name}"
+    prefix          = "${var.website_name}/"
+  }
 
   aliases = [
     "${var.website_domain["name"]}",
   ]
+
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "${var.website_name}-origin"
+    compress         = true
 
     forwarded_values {
       query_string = false
@@ -196,14 +208,17 @@ resource "aws_cloudfront_distribution" "website-distribution" {
     default_ttl            = 3600
     max_ttl                = 86400
   }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
   }
+
   viewer_certificate {
     acm_certificate_arn = "${aws_acm_certificate.website.arn}"
     ssl_support_method  = "sni-only"
   }
+
   tags = {}
 }

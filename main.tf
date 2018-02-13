@@ -13,9 +13,28 @@ provider "aws" {
 # --------------------------------
 # IAM User: website-writer
 
+data "aws_iam_policy_document" "website-writer-policy" {
+  statement {
+    actions = ["cloudfront:CreateInvalidation"]
+
+    resources = ["*"]
+  }
+}
+
 resource "aws_iam_user" "website-writer" {
   name          = "${var.website_name}-website-writer"
   force_destroy = true
+}
+
+resource "aws_iam_policy" "website-writer-policy" {
+  name   = "${var.website_name}-website-writer-policy"
+  policy = "${data.aws_iam_policy_document.website-writer-policy.json}"
+}
+
+resource "aws_iam_policy_attachment" "website-writer-attachment" {
+  name       = "${var.website_name}-website-writer-attachment"
+  users      = ["${aws_iam_user.website-writer.name}"]
+  policy_arn = "${aws_iam_policy.website-writer-policy.arn}"
 }
 
 # --------------------------------
@@ -80,21 +99,17 @@ resource "aws_acm_certificate_validation" "website" {
 data "aws_iam_policy_document" "website-s3-policy" {
   statement {
     actions = [
-      "s3:ListBucket",
       "s3:GetObject",
     ]
 
     resources = [
-      "${aws_s3_bucket.website-s3.arn}",
       "${aws_s3_bucket.website-s3.arn}/*",
     ]
 
     principals {
       type = "AWS"
 
-      identifiers = [
-        "${aws_cloudfront_origin_access_identity.website-origin_access_identity.iam_arn}",
-      ]
+      identifiers = ["*"]
     }
   }
 
@@ -138,8 +153,6 @@ resource "aws_s3_bucket_policy" "website-s3" {
 # --------------------------------
 # CloudFront:
 
-resource "aws_cloudfront_origin_access_identity" "website-origin_access_identity" {}
-
 resource "aws_cloudfront_distribution" "website-distribution" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -153,7 +166,7 @@ resource "aws_cloudfront_distribution" "website-distribution" {
     custom_origin_config {
       http_port              = "80"
       https_port             = "443"
-      origin_protocol_policy = "match-viewer"
+      origin_protocol_policy = "http-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }

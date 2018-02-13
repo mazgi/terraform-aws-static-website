@@ -150,8 +150,8 @@ resource "aws_s3_bucket" "website" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket" "website-log-s3" {
-  bucket = "${var.website_name}-website-log-s3"
+resource "aws_s3_bucket" "website-log" {
+  bucket = "${var.website_name}-website-log"
 
   tags {}
 
@@ -181,7 +181,7 @@ resource "aws_cloudfront_distribution" "website-distribution" {
 
   logging_config {
     include_cookies = false
-    bucket          = "${aws_s3_bucket.website-log-s3.bucket_domain_name}"
+    bucket          = "${aws_s3_bucket.website-log.bucket_domain_name}"
     prefix          = "${var.website_name}/"
   }
 

@@ -103,7 +103,7 @@ data "aws_iam_policy_document" "website-s3-policy" {
     ]
 
     resources = [
-      "${aws_s3_bucket.website-s3.arn}/*",
+      "${aws_s3_bucket.website.arn}/*",
     ]
 
     principals {
@@ -117,8 +117,8 @@ data "aws_iam_policy_document" "website-s3-policy" {
     actions = ["s3:*"]
 
     resources = [
-      "${aws_s3_bucket.website-s3.arn}",
-      "${aws_s3_bucket.website-s3.arn}/*",
+      "${aws_s3_bucket.website.arn}",
+      "${aws_s3_bucket.website.arn}/*",
     ]
 
     principals {
@@ -131,13 +131,13 @@ data "aws_iam_policy_document" "website-s3-policy" {
   }
 }
 
-resource "aws_s3_bucket_policy" "website-s3" {
-  bucket = "${aws_s3_bucket.website-s3.id}"
+resource "aws_s3_bucket_policy" "website" {
+  bucket = "${aws_s3_bucket.website.id}"
   policy = "${data.aws_iam_policy_document.website-s3-policy.json}"
 }
 
-resource "aws_s3_bucket" "website-s3" {
-  bucket = "${var.website_name}-website-s3"
+resource "aws_s3_bucket" "website" {
+  bucket = "${var.website_name}-website"
   acl    = "public-read"
 
   website {
@@ -150,8 +150,8 @@ resource "aws_s3_bucket" "website-s3" {
   force_destroy = true
 }
 
-resource "aws_s3_bucket" "website-log-s3" {
-  bucket = "${var.website_name}-website-log-s3"
+resource "aws_s3_bucket" "website-log" {
+  bucket = "${var.website_name}-website-log"
 
   tags {}
 
@@ -168,7 +168,7 @@ resource "aws_cloudfront_distribution" "website-distribution" {
   price_class         = "PriceClass_200"
 
   origin {
-    domain_name = "${aws_s3_bucket.website-s3.website_endpoint}"
+    domain_name = "${aws_s3_bucket.website.website_endpoint}"
     origin_id   = "${var.website_name}-origin"
 
     custom_origin_config {
@@ -181,7 +181,7 @@ resource "aws_cloudfront_distribution" "website-distribution" {
 
   logging_config {
     include_cookies = false
-    bucket          = "${aws_s3_bucket.website-log-s3.bucket_domain_name}"
+    bucket          = "${aws_s3_bucket.website-log.bucket_domain_name}"
     prefix          = "${var.website_name}/"
   }
 

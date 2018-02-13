@@ -11,30 +11,55 @@ provider "aws" {
 }
 
 # --------------------------------
-# IAM User: website-writer
+# IAM User: website-content-maintainer
 
-data "aws_iam_policy_document" "website-writer-policy" {
+resource "aws_iam_user" "website-content-maintainer" {
+  name          = "${var.website_name}-website-content-maintainer"
+  force_destroy = true
+}
+
+# --------------------------------
+# IAM Group: website-content-maintainers
+
+data "aws_iam_policy_document" "website-content-maintenance-policy" {
   statement {
     actions = ["cloudfront:CreateInvalidation"]
 
     resources = ["*"]
   }
+
+  statement {
+    actions = ["s3:*"]
+
+    resources = [
+      "${aws_s3_bucket.website.arn}",
+      "${aws_s3_bucket.website.arn}/*",
+    ]
+  }
 }
 
-resource "aws_iam_user" "website-writer" {
-  name          = "${var.website_name}-website-writer"
-  force_destroy = true
+resource "aws_iam_policy" "website-content-maintainers-policy" {
+  name   = "${var.website_name}-website-content-maintainers-policy"
+  policy = "${data.aws_iam_policy_document.website-content-maintenance-policy.json}"
 }
 
-resource "aws_iam_policy" "website-writer-policy" {
-  name   = "${var.website_name}-website-writer-policy"
-  policy = "${data.aws_iam_policy_document.website-writer-policy.json}"
+resource "aws_iam_group" "website-content-maintainers" {
+  name = "${var.website_name}-website-content-maintainers"
 }
 
-resource "aws_iam_policy_attachment" "website-writer-attachment" {
-  name       = "${var.website_name}-website-writer-attachment"
-  users      = ["${aws_iam_user.website-writer.name}"]
-  policy_arn = "${aws_iam_policy.website-writer-policy.arn}"
+resource "aws_iam_group_policy_attachment" "website-content-maintainers-attachment" {
+  group      = "${aws_iam_group.website-content-maintainers.name}"
+  policy_arn = "${aws_iam_policy.website-content-maintainers-policy.arn}"
+}
+
+resource "aws_iam_group_membership" "website-content-maintainers-membership" {
+  name = "${var.website_name}-website-content-maintainers-membership"
+
+  users = [
+    "${aws_iam_user.website-content-maintainer.name}",
+  ]
+
+  group = "${aws_iam_group.website-content-maintainers.name}"
 }
 
 # --------------------------------
@@ -110,23 +135,6 @@ data "aws_iam_policy_document" "website-s3-policy" {
       type = "AWS"
 
       identifiers = ["*"]
-    }
-  }
-
-  statement {
-    actions = ["s3:*"]
-
-    resources = [
-      "${aws_s3_bucket.website.arn}",
-      "${aws_s3_bucket.website.arn}/*",
-    ]
-
-    principals {
-      type = "AWS"
-
-      identifiers = [
-        "${aws_iam_user.website-writer.arn}",
-      ]
     }
   }
 }

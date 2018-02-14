@@ -1,1 +1,1 @@
-# terraform-module.aws-static-website
+# terraform-aws-static-website
